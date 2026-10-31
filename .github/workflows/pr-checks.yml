@@ -1,0 +1,53 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main, develop]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    name: Conventional PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          scopes: |
+            backend
+            frontend
+            ci
+            repo
+          requireScope: false
+
+  branch-name:
+    name: Branch naming convention
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate head branch name
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          regex='^((feature|fix|hotfix|chore|docs|refactor|test|ci)/[a-z0-9]+(-[a-z0-9]+)*|release/[0-9]+\.[0-9]+\.[0-9]+|dependabot/.+)$'
+          if [[ "$BRANCH" =~ $regex ]] || [[ "$BRANCH" == "develop" && "${{ github.base_ref }}" == "main" ]]; then
+            echo "Branch '$BRANCH' is valid."
+          else
+            echo "::error::Branch '$BRANCH' does not match the convention. See CONTRIBUTING.md (e.g. feature/backend-12-add-product-api)."
+            exit 1
+          fi
